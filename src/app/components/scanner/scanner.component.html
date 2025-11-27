@@ -1,0 +1,145 @@
+<!-- Scanner aur Data Display UI -->
+<div class="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-4 font-sans">
+    <div class="w-full max-w-md bg-white shadow-xl rounded-xl p-6">
+        <h1 class="text-3xl font-extrabold text-center text-indigo-700 mb-6 border-b-2 border-indigo-200 pb-2">
+            EHS Worker Access Scanner (Medical Check)
+        </h1>
+
+        <!-- Scanner Area -->
+        <div class="bg-gray-800 p-4 rounded-lg mb-6">
+            <h2 class="text-xl font-semibold text-white mb-3">
+                {{ isScanning ? 'Scanning for QR Code...' : 'Ready to Scan' }}
+            </h2>
+
+            <div *ngIf="isScanning" class="relative w-full h-64 overflow-hidden rounded-lg border-4 border-indigo-500">
+                <!-- QR Code Scanner component: ZXing use karta hai -->
+                <zxing-scanner [formats]="allowedFormats" (scanSuccess)="handleScanSuccess($event)" [tryHarder]="true"
+                    class="block w-full h-full object-cover">
+                </zxing-scanner>
+                <!-- Scanning animation line -->
+                <div class="absolute inset-x-0 h-1 bg-red-400 animate-pulse-line"></div>
+            </div>
+
+            <!-- Scanner stopped placeholder -->
+            <div *ngIf="!isScanning && !workerData" class="flex items-center justify-center h-64 bg-gray-700 rounded-lg">
+                <p class="text-gray-400 text-lg">Click 'Start Scan' to open camera</p>
+            </div>
+        </div>
+
+        <!-- Buttons -->
+        <div class="flex justify-center space-x-4 mb-6">
+            <button *ngIf="!isScanning" (click)="startScan()"
+                class="flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-full shadow-sm text-white bg-green-500 hover:bg-green-600 transition duration-150 ease-in-out transform hover:scale-105">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                    xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.218A2 2 0 0110.77 4h2.46a2 2 0 011.664.89l.812 1.218A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z">
+                    </path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z">
+                    </path>
+                </svg>
+                Start Scanning
+            </button>
+            <button *ngIf="isScanning" (click)="stopScan()"
+                class="flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-full shadow-sm text-white bg-red-500 hover:bg-red-600 transition duration-150 ease-in-out transform hover:scale-105">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                    xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+                Stop Scan
+            </button>
+        </div>
+
+        <!-- Result Display Area (Medical Focus) -->
+        <div *ngIf="workerData" class="rounded-xl shadow-lg overflow-hidden border-2" [ngClass]="getStatusClass()">
+            <!-- Status Header -->
+            <div class="p-4 text-white text-center">
+                <div class="text-sm font-light">Worker ID: {{ workerData.Worker_ID }} | Name: {{ workerData.Name }}</div>
+                <h3 class="text-3xl font-bold uppercase mt-1">{{ getStatusMessage() }}</h3>
+            </div>
+
+            <!-- Details Card -->
+            <div class="bg-white p-6">
+                <div class="text-gray-700 space-y-3">
+                    <h4 class="text-xl font-bold text-center text-indigo-700 mb-4">Worker Credentials</h4>
+                    
+                    <div class="flex justify-between items-center border-b pb-2">
+                        <span class="font-medium">Medical Status:</span>
+                        <span class="font-semibold text-lg"
+                            [ngClass]="workerData.Medical_Validity === 'Valid' ? 'text-green-600' : 'text-red-600'">
+                            {{ workerData.Medical_Validity }}
+                        </span>
+                    </div>
+
+                    <div class="flex justify-between items-center border-b pb-2">
+                        <span class="font-medium">Safety Induction Status:</span>
+                        <span class="font-semibold text-lg"
+                            [ngClass]="workerData.Safety_Induction_Status === 'Done' ? 'text-green-600' : 'text-red-600'">
+                            {{ workerData.Safety_Induction_Status }}
+                        </span>
+                    </div>
+
+                    <div class="flex justify-between items-center border-b pb-2">
+                        <span class="font-medium">Last Medical Test Date:</span>
+                        <span>{{ workerData.Medical_Test_Date }}</span>
+                    </div>
+
+                    <div class="flex justify-between items-center pb-2">
+                        <span class="font-medium">Medical Due Date:</span>
+                        <span [ngClass]="workerData.Medical_Validity !== 'Valid' ? 'text-red-600 font-bold' : 'text-gray-900'">
+                            {{ workerData.Medical_Due_Date }}
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Medical Report Link -->
+                <div class="mt-6 text-center">
+                    <a *ngIf="workerData.Medical_Report_Link !== '#'" [href]="workerData.Medical_Report_Link" target="_blank"
+                        class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-full shadow-sm text-white bg-blue-600 hover:bg-blue-700 transition duration-150 ease-in-out">
+                        <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M4 4a2 2 0 012-2h8a2 2 0 012 2v12a1 1 0 01-1 1h-2.586l-2.707 2.707a1 1 0 01-1.414 0L7.586 17H5a1 1 0 01-1-1V4zm10 2a1 1 0 100 2 1 1 0 000-2zm0 4a1 1 0 100 2 1 1 0 000-2zm-3 4a1 1 0 100 2 1 1 0 000-2z" clip-rule="evenodd"></path></svg>
+                        View Full Medical Report
+                    </a>
+                </div>
+
+                 <!-- Scan New ID Button -->
+                <button 
+                  (click)="startScan()"
+                  class="w-full mt-6 py-3 px-4 bg-gray-500 hover:bg-gray-600 text-white font-extrabold rounded-xl transition duration-300 shadow-md transform hover:scale-[0.99]">
+                  Scan New ID
+                </button>
+            </div>
+        </div>
+
+        <!-- No data scanned yet / Scanning message -->
+        <div *ngIf="!workerData && !isScanning" class="text-center p-6 bg-gray-200 rounded-lg">
+            <p class="text-gray-600 font-medium">Scan QR code to check worker medical status.</p>
+        </div>
+
+    </div>
+</div>
+
+<!-- Custom CSS for animation -->
+<style>
+    /* Tailwind CSS ke liye, hum yahan sirf animation add kar rahe hain */
+    @keyframes pulse-line {
+        0% {
+            top: 0;
+            opacity: 1;
+        }
+
+        50% {
+            top: 95%;
+            opacity: 0.5;
+        }
+
+        100% {
+            top: 0;
+            opacity: 1;
+        }
+    }
+
+    .animate-pulse-line {
+        animation: pulse-line 2s infinite ease-in-out;
+    }
+</style>
